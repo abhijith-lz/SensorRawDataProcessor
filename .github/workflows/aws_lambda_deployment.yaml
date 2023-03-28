@@ -2,46 +2,38 @@ name: Deploy Lambda Function
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - master
+      - main
   workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
   FUNCTION_NAME: ${{ github.repository }}
-  ZIP_FILE: deployment-package.zip
+  PYTHON_VERSION: 3.8
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install dependencies
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-    - name: Create deployment package
-      run: |
-        zip -r9 $ZIP_FILE .
-        cd venv/lib/python3.9/site-packages/
-        zip -r9 ../../../../$ZIP_FILE .
-
-    - name: Deploy function
-      uses: einaregilsson/lambda-deploy@v1
-      with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        region: ${{ env.AWS_REGION }}
-        function_name: ${{ env.FUNCTION_NAME }}
-        file_name: ${{ env.ZIP_FILE }}
-        handler_name: lambda_function.lambda_handler
-        runtime: python3.9
-        update_mode: create_or_update
+      - name: Deploy Lambda
+        uses: einsteinish/aws-lambda-deploy@v1
+        with:
+          access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          region: ${{ env.AWS_REGION }}
+          function_name: ${{ env.FUNCTION_NAME }}
+          handler: lambda_function.lambda_handler
+          zip_file: index.zip
