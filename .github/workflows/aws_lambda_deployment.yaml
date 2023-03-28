@@ -1,22 +1,30 @@
 name: Deploy Lambda Function
 
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
+
 jobs:
-  deploy_source:
-    name: deploy lambda from source
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout source code
-        uses: actions/checkout@v1
-      - name: default deploy
-        uses: appleboy/lambda-action@master
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_region: us-east-1
-          function_name: ${{ github.repository }}
-          source: lambda_function.py
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Create Lambda Deployment Package
+        run: |
+          pip install -r requirements.txt -t .
+          zip -r9 lambda.zip .
+
+      - name: Deploy Lambda Function
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ github.repository }} \
+            --zip-file fileb://lambda.zip \
+            --publish
