@@ -1,0 +1,33 @@
+name: AWS Lambda Deployment
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Validate CloudFormation template
+        run: aws cloudformation validate-template --template-body file://AWS_LAMBDA/deploy_function.yaml
+
+      - name: Deploy stack
+        run: |
+          aws cloudformation deploy \
+            --stack-name 'lz-lambda-stack' \
+            --template-file AWS_LAMBDA/deploy_function.yaml \
+            --parameter-overrides \
+              FunctionName=${{ github.repository }} \
+              PythonVersion=python3.9 \
+            --capabilities CAPABILITY_IAM
