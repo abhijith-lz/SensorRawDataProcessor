@@ -1,33 +1,47 @@
-name: AWS Lambda Deployment
+name: Deploy Lambda Function
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  AWS_REGION: us-east-1
+  FUNCTION_NAME: ${{ github.repository }}
+  ZIP_FILE: deployment-package.zip
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
 
-      - name: Validate CloudFormation template
-        run: aws cloudformation validate-template --template-body file://AWS_LAMBDA/deploy_function.yaml
+    - name: Install dependencies
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
 
-      - name: Deploy stack
-        run: |
-          aws cloudformation deploy \
-            --stack-name 'lz-lambda-stack-test' \
-            --template-file AWS_LAMBDA/deploy_function.yaml \
-            --parameter-overrides \
-              FunctionName=${{ github.repository }} \
-              PythonVersion=python3.9 \
-            --capabilities CAPABILITY_IAM
+    - name: Create deployment package
+      run: |
+        zip -r9 $ZIP_FILE .
+        cd venv/lib/python3.9/site-packages/
+        zip -r9 ../../../../$ZIP_FILE .
+
+    - name: Deploy function
+      uses: einaregilsson/lambda-deploy@v1
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region: ${{ env.AWS_REGION }}
+        function_name: ${{ env.FUNCTION_NAME }}
+        file_name: ${{ env.ZIP_FILE }}
+        handler_name: lambda_function.lambda_handler
+        runtime: python3.9
+        update_mode: create_or_update
