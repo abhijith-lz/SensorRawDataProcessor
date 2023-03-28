@@ -1,33 +1,22 @@
 name: Deploy Lambda Function
+
 on:
   push:
     branches:
-      - main
       - master
   workflow_dispatch:
-
 jobs:
-  deploy:
+  deploy_source:
+    name: deploy lambda from source
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt -t .
-
-      - name: Deploy Lambda Function
+      - name: checkout source code
+        uses: actions/checkout@v1
+      - name: default deploy
         uses: appleboy/lambda-action@master
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          region: us-east-1
-          function-name: ${{ github.repository }}
-          function-zip-file: lambda.zip
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: us-east-1
+          function_name: ${{ github.repository }}
+          source: lambda_function.py
