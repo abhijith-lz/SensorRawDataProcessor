@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt -t .
 
       - name: Deploy Lambda Function
-        uses: einsteinish/aws-lambda-deploy@v1.0.0
+        uses: appleboy/lambda-action@master
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
