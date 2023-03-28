@@ -25,6 +25,6 @@ jobs:
       - name: Deploy Lambda Function
         run: |
           aws lambda update-function-code \
-            --function-name ${{ github.repository }} \
+            --function-name ${{ github.event.repository.name }} \
             --zip-file fileb://lambda.zip \
             --publish
