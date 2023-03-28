@@ -25,7 +25,7 @@ jobs:
       - name: Deploy stack
         run: |
           aws cloudformation deploy \
-            --stack-name 'lz-lambda-stack' \
+            --stack-name 'lz-lambda-stack-test' \
             --template-file AWS_LAMBDA/deploy_function.yaml \
             --parameter-overrides \
               FunctionName=${{ github.repository }} \
