@@ -34,11 +34,9 @@ jobs:
 
       - name: Create SensorRawDataProcessor Lambda Deployment Package
         run: |
-          ls -la
           cd app
           pip install -r requirements.txt -t .
           zip -r9 lambda.zip .
-          ls -la
           
       - name: Deploy SensorRawDataProcessor Lambda Function
         run: |
@@ -46,7 +44,6 @@ jobs:
             --function-name ${{ env.FUNCTION_NAME }} \
             --zip-file fileb://app/lambda.zip \
             --publish
-          aws cloudformation wait stack-${{ env.stack-exists == 'true' && 'update' || 'create' }}-complete --stack-name ${{ env.STACK_NAME }}
           
       - name: Wait for previous update to complete
         run: |
