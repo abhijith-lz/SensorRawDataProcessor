@@ -1,4 +1,4 @@
-name: 5. Deploy SensorRawDataProcessor Lambda
+name: Deploy SensorRawDataProcessor Lambda
 
 on:
   workflow_dispatch:
@@ -34,7 +34,6 @@ jobs:
 
       - name: Create SensorRawDataProcessor Lambda Deployment Package
         run: |
-          cd lambda/app
           pip install -r requirements.txt -t .
           zip -r9 lambda.zip .
           
