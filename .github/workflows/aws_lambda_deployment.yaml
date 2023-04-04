@@ -59,4 +59,4 @@ jobs:
           aws lambda update-function-configuration \
             --function-name ${{ env.FUNCTION_NAME }} \
             --handler lambda_function.lambda_handler
-          aws cloudformation wait stack-${{ env.stack-exists == 'true' && 'update' || 'create' }}-complete --stack-name ${{ env.STACK_NAME }}
+
