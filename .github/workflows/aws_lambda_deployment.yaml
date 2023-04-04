@@ -1,30 +1,63 @@
-name: Deploy Lambda Function
+name: 5. Deploy SensorRawDataProcessor Lambda
 
 on:
   workflow_dispatch:
+
+env:
+  STACK_NAME: TowerpulseSensorRawDataProcessorLambdaStack
+  FUNCTION_NAME: sensor_raw_data_processor
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@master
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Create Lambda Deployment Package
+          aws-region: ${{ secrets.AWS_REGION }}
+          
+      - name: Check if stack exists
+        id: stack-check
         run: |
+          set +e
+          aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} >/dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            echo "stack-exists=true" >> $GITHUB_ENV
+          else
+            echo "stack-exists=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create SensorRawDataProcessor Lambda Deployment Package
+        run: |
+          cd lambda/app
           pip install -r requirements.txt -t .
           zip -r9 lambda.zip .
-
-      - name: Deploy Lambda Function
+          
+      - name: Deploy SensorRawDataProcessor Lambda Function
         run: |
           aws lambda update-function-code \
-            --function-name ${{ github.event.repository.name }} \
+            --function-name ${{ env.FUNCTION_NAME }} \
             --zip-file fileb://lambda.zip \
             --publish
+          aws cloudformation wait stack-${{ env.stack-exists == 'true' && 'update' || 'create' }}-complete --stack-name ${{ env.STACK_NAME }}
+          
+      - name: Wait for previous update to complete
+        run: |
+          while true; do
+            status=$(aws lambda get-function --function-name ${{ env.FUNCTION_NAME }} --query 'Configuration.LastUpdateStatus' --output text)
+            if [ "$status" == "Successful" ]; then
+              break
+            elif [ "$status" == "Failed" ]; then
+              exit 1
+            fi
+            sleep 10
+          done
+          aws lambda update-function-configuration \
+            --function-name ${{ env.FUNCTION_NAME }} \
+            --handler lambda_function.lambda_handler
+          aws cloudformation wait stack-${{ env.stack-exists == 'true' && 'update' || 'create' }}-complete --stack-name ${{ env.STACK_NAME }}
